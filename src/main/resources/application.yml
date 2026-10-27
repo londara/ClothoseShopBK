@@ -1,0 +1,89 @@
+spring:
+  application:
+    name: aura-backend
+  datasource:
+    # stringtype=unspecified lets PostgreSQL cast text parameters to enum columns.
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aura_studio?stringtype=unspecified}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  # Only used with CACHE_TYPE=redis. Password: SPRING_DATA_REDIS_PASSWORD.
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      timeout: 2s
+      repositories:
+        enabled: false
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: never
+  # Real client IP from X-Forwarded-For, trusted only from internal proxies (10.x, 192.168.x,
+  # 172.16-31.x, 127.x, ::1 — e.g. the Next.js server). Needed for the per-IP rate limits.
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:native}
+
+aura:
+  jwt:
+    # HS256 key, at least 32 characters. ALWAYS set JWT_SECRET outside development.
+    secret: ${JWT_SECRET:dev-only-change-me-dev-only-change-me-0123456789}
+    issuer: aura-studio
+    audience: aura-admin
+    access-token-ttl: 15m
+    refresh-token-ttl: 30d
+  login:
+    max-failures: 5
+    lock-duration: 15m
+  uploads:
+    dir: ${UPLOAD_DIR:./data/uploads}
+    max-bytes: 5242880
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000}
+  # First run only: creates the first shop and its owner as platform admin
+  # when the users table is empty (see docs/features/14-bootstrap-platform-admin.md).
+  bootstrap:
+    admin-email: ${ADMIN_EMAIL:}
+    admin-phone: ${ADMIN_PHONE:}
+    admin-password: ${ADMIN_PASSWORD:}
+    admin-name: ${ADMIN_NAME:ម្ចាស់ហាង}
+    shop-slug: ${FIRST_SHOP_SLUG:aura-studio}
+    shop-name: ${FIRST_SHOP_NAME:AURA Studio}
+    shop-telegram: ${FIRST_SHOP_TELEGRAM:aura_studio}
+    shop-type: couture
+  # Per client IP, see docs/features/20-input-security.md (0 = off).
+  rate-limit:
+    signups-per-hour: ${RATE_LIMIT_SIGNUPS_PER_HOUR:10}
+    logins-per-minute: ${RATE_LIMIT_LOGINS_PER_MINUTE:30}
+  # Read cache, see docs/features/19-caching.md. Use redis when running more than one instance.
+  cache:
+    type: ${CACHE_TYPE:caffeine}        # caffeine | redis | none
+    storefront-ttl: ${CACHE_STOREFRONT_TTL:10m}   # shops, products (cleared at once on every change)
+    shop-types-ttl: ${CACHE_SHOP_TYPES_TTL:6h}
+    session-ttl: ${CACHE_SESSION_TTL:60s}         # per-request account/shop status check
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    persist-authorization: true
+    tags-sorter: alpha
+    operations-sorter: method
+
+management:
+  health:
+    redis:
+      # Turn on (REDIS_HEALTH=true) when CACHE_TYPE=redis, so /actuator/health reports Redis.
+      enabled: ${REDIS_HEALTH:false}
+  endpoints:
+    web:
+      exposure:
+        include: health
