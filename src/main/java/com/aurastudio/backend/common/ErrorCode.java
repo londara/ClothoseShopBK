@@ -23,7 +23,7 @@ public enum ErrorCode {
 
 	private final HttpStatus status;
 
-	ErrorCode(HttpStatus status) {
+	ErrorCode(HttpStatus status) {  
 		this.status = status;
 	}
 
